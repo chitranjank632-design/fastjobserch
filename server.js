@@ -446,16 +446,13 @@ app.get('/api/admin/document',auth,async(req,res)=>{
     if(!checkSupabase(res))return;
 
     const filePath=String(
-      req.query.path||''
-    );
+    const filePath=String(req.query.path||'').trim();
 
-    if(!filePath||
-       filePath.includes('..')||
-       filePath.startsWith('/')){
-      return res.status(400).json({
-        error:'Invalid document path'
-      });
-    }
+if(!filePath || filePath.includes('..')){
+  return res.status(400).json({
+    error:'Invalid document path'
+  });
+}
 
     const url=await supabaseSignedUrl(filePath);
 
