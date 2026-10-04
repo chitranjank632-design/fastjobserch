@@ -1,1 +1,608 @@
-<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FastJobSerch</title><style>body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}header{background:#fff;padding:15px 5%;display:flex;justify-content:space-between;position:sticky;top:0}.logo{font-size:25px;font-weight:900;color:#0866ff}.logo b{color:#ff7900}button{cursor:pointer}.hero{background:linear-gradient(135deg,#0866ff,#6d28d9);color:#fff;text-align:center;padding:40px 15px}.hero h1{font-size:38px}.search{max-width:700px;margin:auto;background:#fff;padding:5px;border-radius:10px;display:flex}.search input{flex:1;border:0;outline:0;padding:13px;font-size:16px}.btn{background:#ff7900;color:#fff;border:0;padding:11px 16px;border-radius:8px;font-weight:bold}.wrap{max-width:1100px;margin:30px auto;padding:0 15px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.card{background:#fff;padding:18px;border-radius:13px;border:1px solid #e2e7ef}.tag{display:inline-block;background:#eaf2ff;color:#0759d5;padding:5px 8px;border-radius:5px;font-size:12px;margin:3px}.muted{color:#667085;font-size:14px}.admin{display:none}.modal{background:#111827;color:#fff;padding:20px;border-radius:13px;max-width:520px;margin:auto}.modal input,.modal textarea,.modal select{width:100%;padding:11px;margin:6px 0 12px;border-radius:7px;border:0}.hide{display:none}.danger{background:#dc2626}.item{border-top:1px solid #ffffff33;padding:10px 0}@media(max-width:700px){.grid{grid-template-columns:1fr}.hero h1{font-size:30px}nav button{margin-left:3px}}</style></head><body><header><div class="logo">Fast<b>JobSerch</b></div><nav><button onclick="load('job')">Jobs</button> <button onclick="load('result')">Results</button> <button onclick="load('admit')">Admit Card</button> <button onclick="openAdmin()">Admin</button></nav></header><section class="hero"><h1>FastJobSerch</h1><p>Latest Jobs • Sarkari Result • Admit Card • Online Forms</p><div class="search"><input id="q" placeholder="Job या परीक्षा खोजें..." oninput="filter()"><button class="btn" onclick="filter()">Search</button></div></section><main class="wrap"><h2 id="heading">🔥 Latest Jobs</h2><div id="cards" class="grid"></div><section id="admin" class="admin" style="margin-top:35px"><div class="modal"><h2>🔐 Admin Panel</h2><div id="loginBox"><input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password"><button class="btn" onclick="login()">Login</button></div><div id="panel" class="hide"><p>Logged in as <b id="who"></b></p><select id="type"><option value="job">Job</option><option value="result">Result</option><option value="admit">Admit Card</option><option value="notice">Notice</option></select><input id="title" placeholder="Title"><input id="org" placeholder="Organization"><input id="cat" placeholder="Category"><input id="last" placeholder="Last Date"><input id="link" placeholder="Official Link"><textarea id="details" placeholder="Details"></textarea><button class="btn" onclick="add()">Publish</button> <button class="btn danger" onclick="logout()">Logout</button><div id="manage"></div></div></div></section></main><script>let all=[];async function load(t='job'){let r=await fetch('/api/posts?type='+t);all=await r.json();heading.textContent=t==='job'?'🔥 Latest Jobs':t==='result'?'📊 Latest Results':t==='admit'?'🎫 Admit Cards':'📢 Notices';render(all)}function render(a){cards.innerHTML=a.map(x=>'<div class="card"><h3>'+esc(x.title)+'</h3><p class="muted">'+esc(x.organization||'')+'</p><span class="tag">'+esc(x.category||x.type)+'</span><p>'+esc(x.details||'')+'</p>'+(x.last_date?'<p><b>Last Date:</b> '+esc(x.last_date)+'</p>':'')+(x.official_link?'<a class="btn" target="_blank" rel="noopener" href="'+esc(x.official_link)+'">Official Link</a>':'')+'</div>').join('')||'<p>No posts yet.</p>'}function filter(){let s=q.value.toLowerCase();render(all.filter(x=>(x.title+' '+x.organization+' '+x.category+' '+x.details).toLowerCase().includes(s)))}function openAdmin(){admin.style.display='block';admin.scrollIntoView({behavior:'smooth'});me()}async function login(){let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u.value,password:p.value})});if(r.ok)me();else alert('Login failed')}async function me(){let r=await fetch('/api/me');if(r.ok){let x=await r.json();loginBox.classList.add('hide');panel.classList.remove('hide');who.textContent=x.username;manageList()}else{loginBox.classList.remove('hide');panel.classList.add('hide')}}async function add(){let b={type:type.value,title:title.value,organization:org.value,category:cat.value,last_date:last.value,official_link:link.value,details:details.value};let r=await fetch('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});if(r.ok){alert('Published');load(type.value);manageList()}else alert('Publish failed')}async function logout(){await fetch('/api/logout',{method:'POST'});me()}async function manageList(){let r=await fetch('/api/posts');if(!r.ok)return;let a=await r.json();manage.innerHTML='<h3>Manage Posts</h3>'+a.map(x=>'<div class="item">'+esc(x.title)+' <button onclick="del('+x.id+')" class="btn danger">Delete</button></div>').join('')}async function del(id){if(!confirm('Delete this post?'))return;await fetch('/api/posts/'+id,{method:'DELETE'});load(type.value);manageList()}function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}load();</script></body></html>
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FastJobSerch</title>
+
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
+header{background:#fff;padding:15px 5%;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
+.logo{font-size:25px;font-weight:900;color:#0866ff}
+.logo b{color:#ff7900}
+button{cursor:pointer}
+nav button{border:0;background:none;padding:8px;font-weight:bold}
+.hero{background:linear-gradient(135deg,#0866ff,#6d28d9);color:#fff;text-align:center;padding:40px 15px}
+.hero h1{font-size:38px}
+.search{max-width:700px;margin:auto;background:#fff;padding:5px;border-radius:10px;display:flex}
+.search input{flex:1;border:0;outline:0;padding:13px;font-size:16px}
+.btn{background:#ff7900;color:#fff;border:0;padding:11px 16px;border-radius:8px;font-weight:bold}
+.wrap{max-width:1100px;margin:30px auto;padding:0 15px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+.card{background:#fff;padding:18px;border-radius:13px;border:1px solid #e2e7ef}
+.tag{display:inline-block;background:#eaf2ff;color:#0759d5;padding:5px 8px;border-radius:5px;font-size:12px;margin:3px}
+.muted{color:#667085;font-size:14px}
+section.box{background:#fff;padding:20px;border-radius:15px;margin-top:30px;border:1px solid #e2e7ef}
+.form input,.form select,.form textarea{width:100%;box-sizing:border-box;padding:12px;margin:7px 0 12px;border:1px solid #ccd3df;border-radius:8px}
+.form textarea{min-height:90px}
+.filebox{background:#f8fafc;padding:12px;border-radius:8px;margin:10px 0}
+.status{padding:12px;background:#ecfdf3;color:#087443;border-radius:8px;margin-top:12px}
+.admin{display:none}
+.modal{background:#111827;color:#fff;padding:20px;border-radius:13px}
+.modal input,.modal textarea,.modal select{width:100%;box-sizing:border-box;padding:11px;margin:6px 0 12px;border-radius:7px;border:0}
+.hide{display:none}
+.danger{background:#dc2626}
+.item{border-top:1px solid #ffffff33;padding:10px 0}
+.app{background:#fff;color:#172033;padding:14px;border-radius:10px;margin:10px 0}
+.app button{margin:4px}
+@media(max-width:700px){
+.grid{grid-template-columns:1fr}
+.hero h1{font-size:30px}
+nav button{font-size:12px;padding:5px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">Fast<b>JobSerch</b></div>
+<nav>
+<button onclick="load('job')">Jobs</button>
+<button onclick="load('result')">Results</button>
+<button onclick="load('admit')">Admit Card</button>
+<button onclick="openStudent()">Student Form</button>
+<button onclick="openAdmin()">Admin</button>
+</nav>
+</header>
+
+<section class="hero">
+<h1>FastJobSerch</h1>
+<p>Latest Jobs • Sarkari Result • Admit Card • Online Forms</p>
+
+<div class="search">
+<input id="q" placeholder="Job या परीक्षा खोजें..." oninput="filter()">
+<button class="btn" onclick="filter()">Search</button>
+</div>
+</section>
+
+<main class="wrap">
+
+<h2 id="heading">🔥 Latest Jobs</h2>
+<div id="cards" class="grid"></div>
+
+<!-- STUDENT FORM -->
+<section id="student" class="box" style="display:none">
+
+<h2>📝 Student Application Form</h2>
+<p class="muted">
+अपनी जानकारी भरें और जरूरी documents upload करें।
+</p>
+
+<div class="form">
+
+<input id="sname" placeholder="पूरा नाम">
+
+<input id="smobile"
+type="tel"
+maxlength="10"
+placeholder="10 अंकों का मोबाइल नंबर">
+
+<select id="service">
+<option value="">-- सेवा चुनें --</option>
+<option>Job Application</option>
+<option>Admit Card</option>
+<option>Result</option>
+<option>Online Form</option>
+<option>Other</option>
+</select>
+
+<div class="filebox">
+<b>📄 Documents</b>
+<p class="muted">
+JPG, PNG या PDF • अधिकतम 5MB प्रति file
+</p>
+
+<input
+id="documents"
+type="file"
+multiple
+accept=".jpg,.jpeg,.png,.pdf">
+</div>
+
+<button class="btn" onclick="submitStudent()">
+📤 Application Submit करें
+</button>
+
+<div id="studentStatus"></div>
+
+</div>
+</section>
+
+<!-- ADMIN -->
+<section id="admin" class="admin" style="margin-top:35px">
+
+<div class="modal">
+
+<h2>🔐 Admin Panel</h2>
+
+<div id="loginBox">
+
+<input id="u" placeholder="Username">
+<input id="p" type="password" placeholder="Password">
+
+<button class="btn" onclick="login()">Login</button>
+
+</div>
+
+<div id="panel" class="hide">
+
+<p>Logged in as <b id="who"></b></p>
+
+<select id="type">
+<option value="job">Job</option>
+<option value="result">Result</option>
+<option value="admit">Admit Card</option>
+<option value="notice">Notice</option>
+</select>
+
+<input id="title" placeholder="Title">
+<input id="org" placeholder="Organization">
+<input id="cat" placeholder="Category">
+<input id="last" placeholder="Last Date">
+<input id="link" placeholder="Official Link">
+
+<textarea id="details" placeholder="Details"></textarea>
+
+<button class="btn" onclick="add()">Publish</button>
+<button class="btn" onclick="loadApplications()">Student Applications</button>
+<button class="btn danger" onclick="logout()">Logout</button>
+
+<div id="manage"></div>
+
+<h3>📄 Student Applications</h3>
+<div id="applications">
+No applications loaded.
+</div>
+
+</div>
+</div>
+</section>
+
+</main>
+
+<script>
+
+let all=[];
+
+async function load(t='job'){
+
+let r=await fetch('/api/posts?type='+t);
+
+all=await r.json();
+
+heading.textContent=
+t==='job'?'🔥 Latest Jobs':
+t==='result'?'📊 Latest Results':
+t==='admit'?'🎫 Admit Cards':
+'📢 Notices';
+
+render(all);
+}
+
+function render(a){
+
+cards.innerHTML=a.map(x=>
+'<div class="card">'+
+'<h3>'+esc(x.title)+'</h3>'+
+'<p class="muted">'+esc(x.organization||'')+'</p>'+
+'<span class="tag">'+esc(x.category||x.type)+'</span>'+
+'<p>'+esc(x.details||'')+'</p>'+
+(x.last_date?'<p><b>Last Date:</b> '+esc(x.last_date)+'</p>':'')+
+(x.official_link?
+'<a class="btn" target="_blank" rel="noopener" href="'+
+esc(x.official_link)+'">Official Link</a>':'')+
+'</div>'
+).join('')||'<p>No posts yet.</p>';
+}
+
+function filter(){
+
+let s=q.value.toLowerCase();
+
+render(
+all.filter(x=>
+(x.title+' '+x.organization+' '+x.category+' '+x.details)
+.toLowerCase()
+.includes(s)
+)
+);
+}
+
+function openStudent(){
+
+student.style.display='block';
+
+student.scrollIntoView({
+behavior:'smooth'
+});
+
+}
+
+function openAdmin(){
+
+admin.style.display='block';
+
+admin.scrollIntoView({
+behavior:'smooth'
+});
+
+me();
+
+}
+
+async function login(){
+
+let r=await fetch('/api/login',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+username:u.value,
+password:p.value
+})
+});
+
+if(r.ok)me();
+else alert('Login failed');
+
+}
+
+async function me(){
+
+let r=await fetch('/api/me');
+
+if(r.ok){
+
+let x=await r.json();
+
+loginBox.classList.add('hide');
+panel.classList.remove('hide');
+
+who.textContent=x.username;
+
+manageList();
+
+}else{
+
+loginBox.classList.remove('hide');
+panel.classList.add('hide');
+
+}
+
+}
+
+async function add(){
+
+let b={
+type:type.value,
+title:title.value,
+organization:org.value,
+category:cat.value,
+last_date:last.value,
+official_link:link.value,
+details:details.value
+};
+
+let r=await fetch('/api/posts',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify(b)
+});
+
+if(r.ok){
+
+alert('Published');
+
+load(type.value);
+
+manageList();
+
+}else{
+
+alert('Publish failed');
+
+}
+
+}
+
+async function logout(){
+
+await fetch('/api/logout',{
+method:'POST'
+});
+
+me();
+
+}
+
+async function manageList(){
+
+let r=await fetch('/api/posts');
+
+if(!r.ok)return;
+
+let a=await r.json();
+
+manage.innerHTML=
+'<h3>Manage Posts</h3>'+
+a.map(x=>
+'<div class="item">'+
+esc(x.title)+
+' <button onclick="del('+x.id+')" class="btn danger">Delete</button>'+
+'</div>'
+).join('');
+
+}
+
+async function del(id){
+
+if(!confirm('Delete this post?'))return;
+
+await fetch('/api/posts/'+id,{
+method:'DELETE'
+});
+
+load(type.value);
+
+manageList();
+
+}
+
+/* STUDENT APPLICATION */
+
+async function submitStudent(){
+
+const name=sname.value.trim();
+const mobile=smobile.value.trim();
+const selectedService=service.value;
+const fileInput=documents;
+
+if(!name){
+
+alert('पूरा नाम भरें');
+
+return;
+
+}
+
+if(!/^[0-9]{10}$/.test(mobile)){
+
+alert('सही 10 अंकों का मोबाइल नंबर डालें');
+
+return;
+
+}
+
+if(!selectedService){
+
+alert('सेवा चुनें');
+
+return;
+
+}
+
+if(!fileInput.files.length){
+
+alert('कम से कम एक document चुनें');
+
+return;
+
+}
+
+if(fileInput.files.length>8){
+
+alert('अधिकतम 8 documents upload कर सकते हैं');
+
+return;
+
+}
+
+const files=[];
+
+for(const file of fileInput.files){
+
+if(file.size>5*1024*1024){
+
+alert(file.name+' 5MB से बड़ी है');
+
+return;
+
+}
+
+const allowed=[
+'image/jpeg',
+'image/png',
+'application/pdf'
+];
+
+if(!allowed.includes(file.type)){
+
+alert(
+file.name+
+' केवल JPG, PNG या PDF होना चाहिए'
+);
+
+return;
+
+}
+
+const data=await readFile(file);
+
+files.push({
+name:file.name,
+type:file.type,
+data:data
+});
+
+}
+
+studentStatus.innerHTML=
+'<div class="status">⏳ Documents upload हो रहे हैं...</div>';
+
+try{
+
+const r=await fetch('/api/student/upload',{
+method:'POST',
+headers:{
+'Content-Type':'application/json'
+},
+body:JSON.stringify({
+name,
+mobile,
+service:selectedService,
+files
+})
+});
+
+const data=await r.json();
+
+if(!r.ok){
+
+throw new Error(data.error||'Upload failed');
+
+}
+
+studentStatus.innerHTML=
+'<div class="status">'+
+'✅ Application successfully submit हो गया।<br><br>'+
+'<b>Application ID:</b> '+
+esc(data.application_id)+
+'<br><br>इस ID को सुरक्षित रखें।'+
+'</div>';
+
+sname.value='';
+smobile.value='';
+service.value='';
+documents.value='';
+
+}catch(e){
+
+studentStatus.innerHTML=
+'<div style="background:#fee2e2;color:#991b1b;padding:12px;border-radius:8px">'+
+'❌ '+esc(e.message)+
+'</div>';
+
+}
+
+}
+
+function readFile(file){
+
+return new Promise((resolve,reject)=>{
+
+const reader=new FileReader();
+
+reader.onload=()=>{
+resolve(reader.result);
+};
+
+reader.onerror=reject;
+
+reader.readAsDataURL(file);
+
+});
+
+}
+
+/* ADMIN APPLICATIONS */
+
+async function loadApplications(){
+
+const box=document.getElementById('applications');
+
+box.innerHTML='⏳ Loading...';
+
+const r=await fetch('/api/admin/applications');
+
+if(!r.ok){
+
+box.innerHTML='Applications load नहीं हो सके।';
+
+return;
+
+}
+
+const apps=await r.json();
+
+if(!apps.length){
+
+box.innerHTML='अभी कोई student application नहीं है।';
+
+return;
+
+}
+
+box.innerHTML=apps.map(a=>
+'<div class="app">'+
+'<b>'+esc(a.name)+'</b><br>'+
+'📱 '+esc(a.mobile)+'<br>'+
+'📌 '+esc(a.service)+'<br>'+
+'🆔 '+esc(a.application_id)+'<br>'+
+'📅 '+esc(a.created_at||'')+
+'<hr>'+
+(a.files||[]).map(f=>
+'<button class="btn" onclick="openDocument(\''+
+encodeURIComponent(f.path)+
+'\')">'+
+'📄 '+esc(f.name)+
+'</button>'
+).join(' ')+
+'</div>'
+).join('');
+
+}
+
+async function openDocument(encodedPath){
+
+const path=decodeURIComponent(encodedPath);
+
+const r=await fetch(
+'/api/admin/document?path='+
+encodeURIComponent(path)
+);
+
+const data=await r.json();
+
+if(!r.ok){
+
+alert(data.error||'Document open failed');
+
+return;
+
+}
+
+window.open(data.url,'_blank');
+
+}
+
+function esc(s){
+
+return String(s??'').replace(
+/[&<>"']/g,
+m=>({
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#39;'
+}[m])
+);
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
