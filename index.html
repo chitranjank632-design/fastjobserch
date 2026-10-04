@@ -202,6 +202,11 @@ cards.innerHTML=a.map(x=>
 (x.official_link?
 '<a class="btn" target="_blank" rel="noopener" href="'+
 esc(x.official_link)+'">Official Link</a>':'')+
+
+'<br><br>'+
+'<button class="btn" onclick="openStudent()">'+
+'📝 घर बैठे फॉर्म ऑनलाइन करवाने के लिए यहाँ क्लिक करें'+
+'</button>'+
 '</div>'
 ).join('')||'<p>No posts yet.</p>';
 }
