@@ -445,10 +445,9 @@ app.get('/api/admin/document',auth,async(req,res)=>{
 
     if(!checkSupabase(res))return;
 
-    const filePath=String(
     const filePath=String(req.query.path||'').trim();
 
-if(!filePath || filePath.includes('..')){
+if(!/^[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+$/.test(filePath)){
   return res.status(400).json({
     error:'Invalid document path'
   });
